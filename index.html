@@ -27,7 +27,7 @@ function makeLink(){
  const payload={url:url.origin+url.pathname+url.search,stateKey,autoTime:$('autoTime').checked,startAt,endAt,data,autoSubmit:$('autoSubmit').checked,runId:String(Date.now())+'-'+Math.random().toString(36).slice(2),issuedAt:Date.now()};
  url.hash=(url.hash?url.hash.slice(1)+'&':'')+'wjxhelper='+base64url(payload);return url.href;
 }
-$('launch').addEventListener('click',()=>{try{const link=makeLink();$('status').textContent='正在打开报名网页。请保持 Safari 前台；若未出现报名助手状态条，检查 Safari 扩展是否启用。';const a=document.createElement('a');a.href=link;a.target='_blank';a.rel='noopener noreferrer';document.body.append(a);a.click();a.remove()}catch(e){$('status').textContent=e.message}});
+$('launch').addEventListener('click',()=>{try{const link=makeLink();$('status').textContent='启动链接已生成（包含 #wjxhelper=）。正在打开报名页。若页面网址没有该参数、也没有脚本状态条，请返回这里点击「复制报名启动链接」，粘贴到备忘录检查参数是否存在。';const a=document.createElement('a');a.href=link;a.target='_blank';a.rel='noopener noreferrer';document.body.append(a);a.click();a.remove()}catch(e){$('status').textContent=e.message}});
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(makeLink());$('status').textContent='启动链接已复制，请粘贴到 Safari 地址栏打开（不要分享给别人）。'}catch(e){$('status').textContent='复制失败：'+e.message}});
 })();
 </script></body></html>
