@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Safari 网址参数测试</title>
+<style>
+body{margin:0;padding:24px;background:#f3f7fb;color:#183349;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}
+main{max-width:520px;margin:auto}
+.card{background:white;border:1px solid #dde6ef;border-radius:18px;padding:20px;margin:16px 0;box-shadow:0 3px 20px #1531490a}
+h1{font-size:23px}p{line-height:1.7}
+button{display:block;width:100%;border:0;border-radius:12px;background:#14638e;color:white;font:inherit;font-weight:650;padding:16px;margin-top:12px}
+button.secondary{background:#e6f1f8;color:#155677}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#eaf2f7;padding:14px;border-radius:10px;font-size:14px}
+.good{color:#087d53;font-weight:700}.bad{color:#a83c1a;font-weight:700}
+.small{font-size:13px;color:#5c7182}
+</style>
+<script>
+// 尽早读取 URL 的 hash，避免后续 DOM 更新造成误判
+window.__hashTestInitial = location.hash;
+window.__hashTestInitialTime = Date.now();
+</script>
+</head>
+<body><main>
+<h1>Safari 参数传递测试</h1>
+<p>此页面只检查 URL 片段，不调用问卷星，不填写报名资料，也不会提交。</p>
+<div class="card"><h2>检测结果</h2>
+<div id="result">正在检测……</div><pre id="detail"></pre><p class="small">测试参数只有固定字符，不包含姓名、学号等个人信息。</p></div>
+<div class="card"><h2>开始测试</h2>
+<button id="same">测试一：当前标签页跳转</button>
+<button id="new" class="secondary">测试二：新标签页跳转</button>
+<button id="reload" class="secondary">重新检查当前网址</button>
+</div>
+<p class="small">如果两个测试都显示“启动时参数：存在”，Safari 正常保留了参数。若问卷星仍显示“不存在”，原因更可能在问卷星跳转或 Safari 桥接脚本。</p>
+</main>
+<script>
+(function(){
+const expected="#wjxhelper=SAFARI_TEST_12345";
+const start=window.__hashTestInitial||"";
+function draw(){
+const current=location.hash;
+const isTest=current.includes("wjxhelper=SAFARI_TEST_12345");
+const hadTest=start.includes("wjxhelper=SAFARI_TEST_12345");
+document.getElementById("result").innerHTML=isTest?'<span class="good">✅ 当前参数：存在</span>':(current?'<span class="bad">⚠️ 存在其他网址参数</span>':'<span class="bad">当前参数：不存在</span>');
+document.getElementById("detail").textContent="启动时参数："+(hadTest?"存在":"不存在")+"\n当前参数："+(isTest?"存在":"不存在")+"\n当前页面："+location.pathname+"\n"+(isTest?"Safari 已保留测试参数。":"请先点击测试按钮，打开带参数的页面。");
+}
+draw();
+document.getElementById("same").onclick=()=>{location.href=location.pathname+expected;setTimeout(()=>location.reload(),100)};
+document.getElementById("new").onclick=()=>{const a=document.createElement("a");a.href=location.origin+location.pathname+expected;a.target="_blank";a.rel="noopener";document.body.appendChild(a);a.click();a.remove()};
+document.getElementById("reload").onclick=draw;
+})();
+</script>
+</body>
+</html>
