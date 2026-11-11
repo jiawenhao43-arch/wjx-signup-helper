@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#163d58"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="报名助手"><link rel="manifest" href="./manifest.webmanifest"><title>问卷星 · 私人报名助手</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;color:#173047;background:#f3f7fa}*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}.wrap{max-width:490px;margin:auto;padding:28px 20px 44px}.head{display:flex;gap:13px;align-items:center;margin-bottom:24px}.logo{background:#164f6e;color:white;width:52px;height:52px;display:grid;place-items:center;border-radius:17px;font-size:27px}.head h1{font-size:23px;margin:0 0 3px}.head p{margin:0;color:#687b88;font-size:13px}.card{background:white;border:1px solid #e2eaf0;border-radius:20px;box-shadow:0 10px 30px #1730470b;padding:21px;margin-bottom:15px}label{display:block;font-weight:650;font-size:14px;margin-bottom:8px}input[type=url],input[type=text],input[type=datetime-local]{width:100%;padding:13px 12px;border:1px solid #cad8e3;border-radius:11px;font:inherit;font-size:16px;outline:none}input:focus{border-color:#176187;box-shadow:0 0 0 3px #d7edf6}.hint{color:#687c88;font-size:12px;line-height:1.65;margin:9px 0 0}.person{display:grid;grid-template-columns:70px 1fr;gap:12px;align-items:center;margin:14px 0}.person label{margin:0;color:#566e7c;font-weight:500}.toggle{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:9px 0}.toggle input{width:20px;height:20px;accent-color:#146183}.dates{display:grid;gap:12px;margin:12px 0}.hide{display:none!important}button{background:#165b7f;color:white;border:0;border-radius:12px;padding:15px 18px;width:100%;font-size:17px;font-weight:750;cursor:pointer}button.secondary{background:#e9f2f7;color:#165b7f;font-size:14px;margin-top:9px}.status{padding:12px;border-radius:11px;background:#eaf3f7;line-height:1.65;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}.foot{font-size:12px;color:#718591;line-height:1.8}
+</style></head><body><main class="wrap">
+<div class="head"><div class="logo">✓</div><div><h1>私人报名助手</h1><p>问卷星 · iPhone Safari 配套入口</p></div></div>
+<section class="card"><label for="url">报名网址</label><input id="url" type="url" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="https://www.wjx.top/vm/xxxx.aspx"><p class="hint">只支持 wjx.top 的 HTTPS 报名页面。</p></section>
+<section class="card"><strong>报名信息</strong><div class="person"><label for="name">姓名</label><input id="name" type="text"></div><div class="person"><label for="major">专业</label><input id="major" type="text"></div><div class="person"><label for="student">学号</label><input id="student" type="text" inputmode="numeric"></div><p class="hint">本页面不公开保存个人资料；资料只存储在当前手机浏览器。原 APK 将前三个文本框依次填写为以上三项，其余文本框填入“1”，规则不变。</p></section>
+<section class="card"><div class="toggle"><label for="autoTime">从页面自动识别开放时间</label><input id="autoTime" type="checkbox" checked></div><div id="dates" class="dates hide"><div><label for="start">开始时间（本地）</label><input type="datetime-local" id="start"></div><div><label for="end">结束时间（本地）</label><input type="datetime-local" id="end"></div></div><div class="toggle"><label for="autoSubmit">自动提交</label><input id="autoSubmit" type="checkbox" checked></div><p class="hint">实际自动操作由 Safari 用户脚本完成；验证码需要手动完成。</p></section>
+<section class="card"><button id="launch">一键开始报名</button><button class="secondary" id="copy" type="button">复制报名启动链接</button><div id="status" class="status" role="status" style="margin-top:14px">先在 Safari 安装并启用配套用户脚本，再点击开始报名。</div></section>
+<p class="foot">此页面是启动入口，不能独立跨域操作问卷星；需在 Safari 启用相应用户脚本。启动链接包含报名资料，请勿转发。iOS 后台可能挂起定时操作，以网站最终确认结果为准。</p>
+</main><script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id),ids=['url','name','major','student','autoTime','autoSubmit','start','end'],storage='wjx-pwa-settings-v1';
+try{const o=JSON.parse(localStorage.getItem(storage)||'null');if(o)ids.forEach(id=>{if(!(id in o))return;$(id).type==='checkbox'?$(id).checked=!!o[id]:$(id).value=o[id]})}catch(_){}
+function refresh(){$('dates').classList.toggle('hide',$('autoTime').checked)}refresh();
+ids.forEach(id=>$(id).addEventListener('change',()=>{try{localStorage.setItem(storage,JSON.stringify(Object.fromEntries(ids.map(k=>[k,$(k).type==='checkbox'?$(k).checked:$(k).value]))))}catch(_){}refresh()}));
+function base64url(obj){const bytes=new TextEncoder().encode(JSON.stringify(obj));let s='';bytes.forEach(b=>s+=String.fromCharCode(b));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function makeLink(){
+ const url=new URL($('url').value.trim());
+ if(url.protocol!=='https:' || !(url.hostname==='wjx.top'||url.hostname.endsWith('.wjx.top')))throw Error('请输入 wjx.top 的 HTTPS 报名地址');
+ const data=[$('name').value.trim(),$('major').value.trim(),$('student').value.trim()];
+ if(data.some(v=>!v))throw Error('姓名、专业、学号均不能为空');
+ let startAt=0,endAt=0;
+ if(!$('autoTime').checked){startAt=new Date($('start').value).getTime();endAt=new Date($('end').value).getTime();if(!Number.isFinite(startAt)||!Number.isFinite(endAt)||endAt<=startAt)throw Error('请设置有效的开始和结束时间')}
+ const stateKey='wjx-safari-apk-'+Array.from(new TextEncoder().encode(url.origin+url.pathname)).map(b=>b.toString(16).padStart(2,'0')).join('');
+ const payload={url:url.origin+url.pathname+url.search,stateKey,autoTime:$('autoTime').checked,startAt,endAt,data,autoSubmit:$('autoSubmit').checked,runId:String(Date.now())+'-'+Math.random().toString(36).slice(2),issuedAt:Date.now()};
+ url.hash=(url.hash?url.hash.slice(1)+'&':'')+'wjxhelper='+base64url(payload);return url.href;
+}
+$('launch').addEventListener('click',()=>{try{const link=makeLink();$('status').textContent='正在打开报名网页。请保持 Safari 前台；若未出现报名助手状态条，检查 Safari 扩展是否启用。';const a=document.createElement('a');a.href=link;a.target='_blank';a.rel='noopener noreferrer';document.body.append(a);a.click();a.remove()}catch(e){$('status').textContent=e.message}});
+$('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(makeLink());$('status').textContent='启动链接已复制，请粘贴到 Safari 地址栏打开（不要分享给别人）。'}catch(e){$('status').textContent='复制失败：'+e.message}});
+})();
+</script></body></html>
