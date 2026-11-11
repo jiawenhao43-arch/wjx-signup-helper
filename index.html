@@ -8,7 +8,7 @@
 <section class="card"><strong>报名信息</strong><div class="person"><label for="name">姓名</label><input id="name" type="text"></div><div class="person"><label for="major">专业</label><input id="major" type="text"></div><div class="person"><label for="student">学号</label><input id="student" type="text" inputmode="numeric"></div><p class="hint">本页面不公开保存个人资料；资料只存储在当前手机浏览器。原 APK 将前三个文本框依次填写为以上三项，其余文本框填入“1”，规则不变。</p></section>
 <section class="card"><div class="toggle"><label for="autoTime">从页面自动识别开放时间</label><input id="autoTime" type="checkbox" checked></div><div id="dates" class="dates hide"><div><label for="start">开始时间（本地）</label><input type="datetime-local" id="start"></div><div><label for="end">结束时间（本地）</label><input type="datetime-local" id="end"></div></div><div class="toggle"><label for="autoSubmit">自动提交</label><input id="autoSubmit" type="checkbox" checked></div><p class="hint">实际自动操作由 Safari 用户脚本完成；验证码需要手动完成。</p></section>
 <section class="card"><button id="launch">一键开始报名</button><button class="secondary" id="copy" type="button">复制报名启动链接</button><div id="status" class="status" role="status" style="margin-top:14px">先在 Safari 安装并启用配套用户脚本，再点击开始报名。</div></section>
-<p class="foot">此页面是启动入口，不能独立跨域操作问卷星；需在 Safari 启用相应用户脚本。启动链接包含报名资料，请勿转发。iOS 后台可能挂起定时操作，以网站最终确认结果为准。</p>
+<p class="foot">此页面是启动入口，不能独立跨域操作问卷星；需在 Safari 启用相应用户脚本。V3 一键启动使用跨标签页消息握手，不再将个人资料直接附在网址中。复制启动链接仍包含可还原的个人资料，请勿转发。iOS 后台可能挂起定时操作，以网站最终确认结果为准。</p>
 </main><script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),ids=['url','name','major','student','autoTime','autoSubmit','start','end'],storage='wjx-pwa-settings-v1';
@@ -27,7 +27,43 @@ function makeLink(){
  const payload={url:url.origin+url.pathname+url.search,stateKey,autoTime:$('autoTime').checked,startAt,endAt,data,autoSubmit:$('autoSubmit').checked,runId:String(Date.now())+'-'+Math.random().toString(36).slice(2),issuedAt:Date.now()};
  url.hash=(url.hash?url.hash.slice(1)+'&':'')+'wjxhelper='+base64url(payload);return url.href;
 }
-$('launch').addEventListener('click',()=>{try{const link=makeLink();$('status').textContent='启动链接已生成（包含 #wjxhelper=）。正在打开报名页。若页面网址没有该参数、也没有脚本状态条，请返回这里点击「复制报名启动链接」，粘贴到备忘录检查参数是否存在。';const a=document.createElement('a');a.href=link;a.target='_blank';a.rel='noopener noreferrer';document.body.append(a);a.click();a.remove()}catch(e){$('status').textContent=e.message}});
+function decodeLaunchPayload(link){
+ const target=new URL(link);
+ const fragment=target.hash.slice(1).split('&').find(part=>part.startsWith('wjxhelper='));
+ if(!fragment)throw Error('未生成有效的启动信息');
+ const v=fragment.slice('wjxhelper='.length).replace(/-/g,'+').replace(/_/g,'/');
+ const bytes=Uint8Array.from(atob(v.padEnd(Math.ceil(v.length/4)*4,'=')),c=>c.charCodeAt(0));
+ const payload=JSON.parse(new TextDecoder().decode(bytes));
+ target.hash='';
+ return {target,payload};
+}
+let pendingLaunch=null;
+window.addEventListener('message',event=>{
+ if(!pendingLaunch)return;
+ if(!['https://wjx.top','https://www.wjx.top'].includes(event.origin))return;
+ if(event.source!==pendingLaunch.tab)return;
+ const m=event.data;
+ if(m&&m.type==='WJX_HELPER_READY_V3'){
+  try{
+   event.source.postMessage({type:'WJX_HELPER_CONFIG_V3',payload:pendingLaunch.payload},event.origin);
+   $('status').textContent='已接到 Safari 桥接 V3 握手，正在安全传送启动配置。请切回问卷星标签页查看 V3 状态条。';
+  }catch(err){$('status').textContent='发送配置失败：'+err.message}
+ }
+ if(m&&m.type==='WJX_HELPER_ACK_V3'&&m.runId===pendingLaunch.payload.runId){
+  $('status').textContent=m.ok?'V3 已确认接收配置（不代表报名成功）。请在问卷星标签页查看脚本状态。':'V3 拒绝了配置：'+String(m.error||'未知原因');
+  pendingLaunch=null;
+ }
+});
+$('launch').addEventListener('click',()=>{
+ try{
+  const {target,payload}=decodeLaunchPayload(makeLink());
+  // Avoid sending private details inside the destination URL. Safari V3 obtains them via opener postMessage.
+  const tab=window.open(target.href,'_blank');
+  if(!tab)throw Error('Safari 阻止了弹出标签页，请允许此站点打开新标签页');
+  pendingLaunch={tab,payload};
+  $('status').textContent='已打开问卷星，等待 Safari 桥接 V3 握手。请保持本网页标签页开启，切换到问卷星查看 V3 状态条。';
+ }catch(e){$('status').textContent=e.message}
+});
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(makeLink());$('status').textContent='启动链接已复制，请粘贴到 Safari 地址栏打开（不要分享给别人）。'}catch(e){$('status').textContent='复制失败：'+e.message}});
 })();
 </script></body></html>
